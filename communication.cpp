@@ -115,6 +115,7 @@ void MoveMaster::calibFinishDown()
 void MoveMaster::calibDone()
 {
     _msgToSend.calibState = ~Claw_Calibration::CLAW_CALIB_INIT & _msgToSend.calibState;
+    _msgToSend.calibState = _msgToSend.calibState | Claw_Calibration::CLAW_CALIB_FINISHED;
 }
 
 void MoveMaster::calibDefault()
@@ -161,11 +162,26 @@ bool MoveMaster::isReadCalibStateContains(Claw_Calibration searchedCalibState)
     }
 }
 
+/// @brief checks if the button is PRESSED in the toBeSentMsg
+/// @return true if it is true in the to be sent message
+bool MoveMaster::wasButtonPressed()
+{
+    Claw_Controll_State temp = _msgToSend.controlState & Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON;
+    if (temp == Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /// @brief to see if we are at top position, should be used after proper calibration
 /// @return true if according to the lastly read message z is at the top
 bool MoveMaster::isZatTop()
 {
-    if(_msgReadFromSlave.zHeight == 0)
+    if(_msgReadFromSlave.zHeight <= 0) //safer with <=
         return true;
     else
         return false;
@@ -175,7 +191,7 @@ bool MoveMaster::isZatTop()
 /// @return true if according to the lastly read message z is at the bottom
 bool MoveMaster::isZatBottom()
 {
-    if(_msgReadFromSlave.zHeight == _msgReadFromSlave.zHeightMax)
+    if(_msgReadFromSlave.zHeight >= _msgReadFromSlave.zHeightMax) //safer with >=
         return true;
     else
         return false;

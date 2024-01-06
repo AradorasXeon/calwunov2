@@ -24,6 +24,7 @@ enum class Claw_Calibration : uint8_t
     CLAW_CALIB_INIT =                   0b00000001,
     CLAW_CALIB_TOP_STATE_IN_PROGRESS =  0b00000010,
     CLAW_CALIB_DOWN_STATE_IN_PROGRESS = 0b00000100,
+    CLAW_CALIB_FINISHED =               0b00010000,
     CLAW_CALIB_BAD =                    0b00100000,
     CLAW_CALIB_TOP_DONE =               0b01000000,
     CLAW_CALIB_DOWN_DONE =              0b10000000
@@ -68,6 +69,7 @@ class MoveMaster
     
 
     bool isReadCalibStateContains(Claw_Calibration searchedCalibState);
+    bool wasButtonPressed();
     bool isZatTop();
     bool isZatBottom();
 

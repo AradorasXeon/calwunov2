@@ -137,6 +137,8 @@ void loop()
         //"saying it is done" should be on master side
       }
 
+      msgSlave.setDefaultControllState(); //in case of lost connection do nothing
+
     }
   }
 
