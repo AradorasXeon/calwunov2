@@ -1,7 +1,7 @@
 #ifndef COMMUNICATION_MOVEMENT_2023_01_05
 #define COMMUNICATION_MOVEMENT_2023_01_05
 
-#include "/home/krisztian/arduino/libraries/Wire/Wire.h"
+#include <Wire.h>
 #include "millisTimer.hpp"
 
 
@@ -82,7 +82,7 @@ class MoveMaster
 class MoveSlave
 {
     public:
-    MoveSlave(uint32_t zStepRate);
+    MoveSlave(int32_t zStepRate);
 
     static void readMessageFromMaster(int byteCount);
     static MoveSlave* instance; //for wire lib hack
@@ -92,9 +92,14 @@ class MoveSlave
 
     void calibError();
 
-    MessageFromMaster getMessageFromMaster();
+    MessageFromMaster getMessageFromMaster(); //might not need this
+    bool isMessageFromMasterContainsCalibState(Claw_Calibration searchedCalibState);
+    bool isMessageFromMasterContainsControllState(Claw_Controll_State searchedControllState);
 
-    uint32_t getCurrentZPosition();
+
+    int32_t getCurrentZPosition();
+    int32_t getMaxZPosition();
+
     void setZTopPosition();
     void setZBottomPosition();
     void incrementZPositon();
@@ -107,9 +112,9 @@ class MoveSlave
 
     MessageFromMaster _msgFromMaster;
     MessageFromSlave _msgToSend;
-    uint32_t _zStepRate;
-    uint32_t _zCurrentPosition; //0 should be Top position
-    uint32_t _zHeightBottom;
+    int32_t _zStepRate;
+    int32_t _zCurrentPosition; //0 should be Top position
+    int32_t _zHeightBottom;
 
     MillisTimer timer;
 

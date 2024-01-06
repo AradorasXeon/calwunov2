@@ -46,21 +46,25 @@ MoveMaster::MoveMaster() : timer(2)
 
 void MoveMaster::setLeft()
 {
+    _msgToSend.controlState = ~Claw_Controll_State::CLAW_CONTROLL_STATE_RIGHT & _msgToSend.controlState;
     _msgToSend.controlState = _msgToSend.controlState | Claw_Controll_State::CLAW_CONTROLL_STATE_LEFT;    
 }
 
 void MoveMaster::setRight()
 {
+    _msgToSend.controlState = ~Claw_Controll_State::CLAW_CONTROLL_STATE_LEFT & _msgToSend.controlState;
     _msgToSend.controlState = _msgToSend.controlState | Claw_Controll_State::CLAW_CONTROLL_STATE_RIGHT;    
 }
 
 void MoveMaster::setUp()
 {
+    _msgToSend.controlState = ~Claw_Controll_State::CLAW_CONTROLL_STATE_DOWN & _msgToSend.controlState;
     _msgToSend.controlState = _msgToSend.controlState | Claw_Controll_State::CLAW_CONTROLL_STATE_UP;    
 }
 
 void MoveMaster::setDown()
 {
+    _msgToSend.controlState = ~Claw_Controll_State::CLAW_CONTROLL_STATE_UP & _msgToSend.controlState;
     _msgToSend.controlState = _msgToSend.controlState | Claw_Controll_State::CLAW_CONTROLL_STATE_DOWN;    
 }
 
@@ -181,7 +185,7 @@ bool MoveMaster::isZatBottom()
 
 /// @brief First outside the setup function: MoveSlave* MoveSlave::instance = nullptr; then init it normally then in the setup first give the instance: nameyougave.instance = &nameyougave then use these: Wire.onReceive(MoveSlave::readMessageFromMaster); and Wire.onRequest(&(msgSlave.instance->replyToMaster));
 /// @param zStepRate the rate of the Z axis stepper motor
-MoveSlave::MoveSlave(uint32_t zStepRate) : timer(2)
+MoveSlave::MoveSlave(int32_t zStepRate) : timer(2)
 {   
     _zStepRate = zStepRate;
     setDefaultControllState();
@@ -225,9 +229,46 @@ MessageFromMaster MoveSlave::getMessageFromMaster()
     return _msgFromMaster;
 }
 
-uint32_t MoveSlave::getCurrentZPosition()
+/// @brief this function sees what was the calib state is supposed to be based on the lastly read message from master
+/// @param searchedCalibState the state to check in the last message
+/// @return true if the searchedCalibState was contained in the last message
+bool MoveSlave::isMessageFromMasterContainsCalibState(Claw_Calibration searchedCalibState)
+{
+    Claw_Calibration temp = _msgFromMaster.calibState & searchedCalibState;
+    if(temp == searchedCalibState)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/// @brief this function sees what was the Controll state is supposed to be based on the lastly read message from master
+/// @param searchedControllState the state to check in the last message
+/// @return true if the searchedControllState was contained in the last message
+bool MoveSlave::isMessageFromMasterContainsControllState(Claw_Controll_State searchedControllState)
+{
+    Claw_Controll_State temp = _msgFromMaster.controlState & searchedControllState;
+    if(temp == searchedControllState)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+int32_t MoveSlave::getCurrentZPosition()
 {
     return _zCurrentPosition;
+}
+
+int32_t MoveSlave::getMaxZPosition()
+{
+    return _zHeightBottom;
 }
 
 /// @brief should be set when incoming msg is set to top calib done for first time
