@@ -39,7 +39,7 @@ void moveLeft(uint16_t stepCount)
   digitalWrite(STEP_DIR_X, HIGH);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[0] != 0) break;
+    //if (limiterStates[0] != 0) break;
     digitalWrite(STEP_PIN_X, HIGH);
     xTimer.doDelay();
     digitalWrite(STEP_PIN_X, LOW);
@@ -52,7 +52,7 @@ void moveRight(uint16_t stepCount)
   digitalWrite(STEP_DIR_X, LOW);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[1] != 0) break;
+    //if (limiterStates[1] != 0) break;
     digitalWrite(STEP_PIN_X, HIGH);
     xTimer.doDelay();
     digitalWrite(STEP_PIN_X, LOW);
@@ -65,7 +65,7 @@ void moveUp(uint16_t stepCount)
   digitalWrite(STEP_DIR_Y, HIGH);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[2] != 0) break;
+    //if (limiterStates[2] != 0) break;
     digitalWrite(STEP_PIN_Y, HIGH);
     yTimer.doDelay();
     digitalWrite(STEP_PIN_Y, LOW);
@@ -78,7 +78,7 @@ void moveDown(uint16_t stepCount)
   digitalWrite(STEP_DIR_Y, LOW);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[3] != 0) break;
+    //if (limiterStates[3] != 0) break;
     digitalWrite(STEP_PIN_Y, HIGH);
     yTimer.doDelay();
     digitalWrite(STEP_PIN_Y, LOW);
@@ -91,7 +91,7 @@ void moveClawUp(uint16_t stepCount)
   digitalWrite(STEP_DIR_Z, HIGH);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[4] != 0) break;
+    //if (limiterStates[4] != 0) break;
     digitalWrite(STEP_PIN_Z, HIGH);
     zTimer.doDelay();
     digitalWrite(STEP_PIN_Z, LOW);
@@ -104,7 +104,7 @@ void moveClawDown(uint16_t stepCount)
   digitalWrite(STEP_DIR_Z, LOW);
   for(int i = 0; i<stepCount; i++)
   {
-    if (limiterStates[5] != 0) break;
+    //if (limiterStates[5] != 0) break;
     digitalWrite(STEP_PIN_Z, HIGH);
     zTimer.doDelay();
     digitalWrite(STEP_PIN_Z, LOW);

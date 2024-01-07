@@ -95,7 +95,66 @@ void loop()
     limiterStates[3] = false;
   }
 
-  //Z LIMITER WILL BE HERE
+  //Z SW LIMITERS only used when calibrated
+  if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_FINISHED))
+  {
+    if(msgSlave.getCurrentZPosition() <= 0)
+    {
+      limiterStates[4] = true;
+    }
+    else
+    {
+      limiterStates[4] = false;
+    }
+
+    if(msgSlave.getCurrentZPosition() >= msgSlave.getMaxZPosition())
+    {
+      limiterStates[5] = true;
+    }
+    else
+    {
+      limiterStates[5] = false;
+    }
+  }
+
+  /*
+  //DEBUG
+  #ifdef DEBUG
+  for(int i = 0; i<6; i++)
+  {
+   Serial.print(limiterStates[i], DEC);
+   Serial.print("\t");
+  }
+  Serial.println("^^^^^^^^^^^^^^^^^^^^^****");
+  #endif // DEBUG
+  */
+
+  //DEBUG end
+
+  //Power saving
+  /*
+  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_IDLE))
+  {
+    digitalWrite(ENABLER, HIGH);
+    #ifdef DEBUG
+      Serial.println("STEPPERS DISABLED");
+    #endif // DEBUG
+  }
+  else if (msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_ERROR))
+  {
+    digitalWrite(ENABLER, HIGH);
+    #ifdef DEBUG
+      Serial.println("STEPPERS DISABLED");
+    #endif // DEBUG
+  }
+  else
+  {
+    digitalWrite(ENABLER, LOW); //activates steppers
+    #ifdef DEBUG
+      Serial.println("STEPPERS ENABLED *****************************************");
+    #endif // DEBUG
+  }
+  */
 
   //Then we see if we are in calibration mode 
   if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_INIT))
@@ -142,56 +201,59 @@ void loop()
     }
   }
 
-  //LEFT
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_LEFT))
+  if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_FINISHED))
   {
-    lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_LEFT;
-    moveLeft(X_DIRECTION_STEP_COUNT);
-  }
-
-  //RIGHT
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_RIGHT))
-  {
-    lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_RIGHT;
-    moveRight(X_DIRECTION_STEP_COUNT);
-  }
-
-  //UP
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_UP))
-  {
-    lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_UP;
-    moveUp(Y_DIRECTION_STEP_COUNT);
-  }
-
-  //DOWN
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_DOWN))
-  {
-    lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_DOWN;
-    moveDown(Y_DIRECTION_STEP_COUNT);
-  }
-
-  //BUTTON
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON))
-  {
-    //CLAW ACTION HERE
-    if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_DOWN_DONE) && msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_TOP_DONE))
+    //LEFT
+    if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_LEFT))
     {
-      while(msgSlave.getCurrentZPosition() < msgSlave.getMaxZPosition()) //we do this until we have reached the bottom position
+      lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_LEFT;
+      moveLeft(X_DIRECTION_STEP_COUNT);
+    }
+
+    //RIGHT
+    if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_RIGHT))
+    {
+      lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_RIGHT;
+      moveRight(X_DIRECTION_STEP_COUNT);
+    }
+
+    //UP
+    if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_UP))
+    {
+      lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_UP;
+      moveUp(Y_DIRECTION_STEP_COUNT);
+    }
+
+    //DOWN
+    if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_DOWN))
+    {
+      lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_DOWN;
+      moveDown(Y_DIRECTION_STEP_COUNT);
+    }
+
+    //BUTTON
+    if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON))
+    {
+      //CLAW ACTION HERE
+      if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_DOWN_DONE) && msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_TOP_DONE))
       {
-        msgSlave.incrementZPositon();
-        moveClawDown(Z_DIRECTION_STEP_COUNT);
+        while(msgSlave.getCurrentZPosition() < msgSlave.getMaxZPosition()) //we do this until we have reached the bottom position
+        {
+          msgSlave.incrementZPositon();
+          moveClawDown(Z_DIRECTION_STEP_COUNT);
+        }
+
+        //we should wait here until claw is closed 
+
+        while(msgSlave.getCurrentZPosition() > 0) //we do this until the top is reached 
+        {
+          msgSlave.decrementZPositon();
+          moveClawUp(Z_DIRECTION_STEP_COUNT);
+        }
+
+        //then goto home position 
+
       }
-
-      //we should wait here until claw is closed 
-
-      while(msgSlave.getCurrentZPosition() > 0) //we do this until the top is reached 
-      {
-        msgSlave.decrementZPositon();
-        moveClawUp(Z_DIRECTION_STEP_COUNT);
-      }
-
-      //then goto home position 
-
     }
   }
 

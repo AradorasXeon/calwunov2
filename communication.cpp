@@ -40,6 +40,9 @@ MoveMaster::MoveMaster() : timer(2)
 {
     setDefaultControllState();
     calibDefault();
+    _msgReadFromSlave.calibState = Claw_Calibration::CLAW_CALIB_IDLE_STATE;
+    _msgReadFromSlave.zHeight = -2500;
+    _msgReadFromSlave.zHeightMax = -1;
 
     Wire.begin();
 }
@@ -206,6 +209,8 @@ MoveSlave::MoveSlave(int32_t zStepRate) : timer(2)
     _zStepRate = zStepRate;
     setDefaultControllState();
     calibDefault();
+    _zCurrentPosition = -1;
+    _zHeightBottom = 5;
 
     Wire.begin(I2C_MOTOR_CTRL_ADDRESS);
 }
