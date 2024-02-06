@@ -20,13 +20,13 @@
 
 #define X_DIRECTION_STEP_COUNT 30
 #define Y_DIRECTION_STEP_COUNT 40
-#define Z_DIRECTION_STEP_COUNT 80
+#define Z_DIRECTION_STEP_COUNT 120
 
 //suggestion in the video: 700-3000, this sets the amount of microseconds between triggering the stepper's input signal
 
 #define X_MICRO_TIME 3000
 #define Y_MICRO_TIME 3000
-#define Z_MICRO_TIME 800
+#define Z_MICRO_TIME 500
 
 Timer xTimer(X_MICRO_TIME);
 Timer yTimer(Y_MICRO_TIME);
