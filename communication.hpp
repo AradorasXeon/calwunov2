@@ -39,8 +39,8 @@ struct MessageFromMaster
 struct MessageFromSlave
 {
     Claw_Calibration calibState;
-    uint32_t zHeight;
-    uint32_t zHeightMax;
+    int32_t zHeight;
+    int32_t zHeightMax;
 };
 class MoveMaster
 {
@@ -84,7 +84,7 @@ class MoveMaster
 class MoveSlave
 {
     public:
-    MoveSlave(int32_t zStepRate);
+    MoveSlave(int32_t* pointerToGlobalZPos);
 
     static void readMessageFromMaster(int byteCount);
     static MoveSlave* instance; //for wire lib hack
@@ -100,23 +100,21 @@ class MoveSlave
 
 
     int32_t getCurrentZPosition();
-    int32_t getMaxZPosition();
+    int32_t getZPosBottom();
+    int32_t getZPosTop();
+
 
     void setZTopPosition();
     void setZBottomPosition();
-    void incrementZPositon();
-    void decrementZPositon();
-
-    static void replyToMaster();
 
     private:
     void readMsg(int byteCount);
 
     MessageFromMaster _msgFromMaster;
     MessageFromSlave _msgToSend;
-    int32_t _zStepRate;
-    int32_t _zCurrentPosition; //0 should be Top position
-    int32_t _zHeightBottom;
+    int32_t* _currZpos;
+    int32_t _zTopPosition;
+    int32_t _zBottomPosition;
 
     MillisTimer timer;
 

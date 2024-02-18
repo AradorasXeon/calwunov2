@@ -20,7 +20,7 @@
 
 #define X_DIRECTION_STEP_COUNT 30
 #define Y_DIRECTION_STEP_COUNT 40
-#define Z_DIRECTION_STEP_COUNT 120
+#define Z_DIRECTION_STEP_COUNT 250//120
 
 //suggestion in the video: 700-3000, this sets the amount of microseconds between triggering the stepper's input signal
 
@@ -32,7 +32,8 @@ Timer xTimer(X_MICRO_TIME);
 Timer yTimer(Y_MICRO_TIME);
 Timer zTimer(Z_MICRO_TIME);
 
-bool limiterStates[6];      //false or 0 means NOT TRIGGERED THIS IS ONLY THE SW based limiter
+bool limiterStates[6];        //false or 0 means NOT TRIGGERED THIS IS ONLY THE SW based limiter
+int32_t globalZposition = 0;  //for Z SW limiters
 
 void moveLeft(uint16_t stepCount)
 {
@@ -91,11 +92,12 @@ void moveClawUp(uint16_t stepCount)
   digitalWrite(STEP_DIR_Z, LOW);
   for(int i = 0; i<stepCount; i++)
   {
-    //if (limiterStates[4] != 0) break;
+    if (limiterStates[4] != 0) break;
     digitalWrite(STEP_PIN_Z, HIGH);
     zTimer.doDelay();
     digitalWrite(STEP_PIN_Z, LOW);
     zTimer.doDelay();
+    globalZposition--;
   }
 }
 
@@ -104,11 +106,12 @@ void moveClawDown(uint16_t stepCount)
   digitalWrite(STEP_DIR_Z, HIGH);
   for(int i = 0; i<stepCount; i++)
   {
-    //if (limiterStates[5] != 0) break;
+    if (limiterStates[5] != 0) break;
     digitalWrite(STEP_PIN_Z, HIGH);
     zTimer.doDelay();
     digitalWrite(STEP_PIN_Z, LOW);
     zTimer.doDelay();
+    globalZposition++;
   }
 }
 

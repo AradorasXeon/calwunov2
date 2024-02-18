@@ -144,8 +144,12 @@ void MoveMaster::sendMessageToSlave()
 /// @brief reads in the status of the slave, e.g.: z postion and the calib state of the slave
 void MoveMaster::readMessageFromSlave()
 {
+    byte buff[9];
     Wire.requestFrom(I2C_MOTOR_CTRL_ADDRESS, sizeof(MessageFromSlave), true);
-    Wire.readBytes((byte*) &_msgReadFromSlave, sizeof(MessageFromSlave));
+    Wire.readBytes(buff, 9);
+    _msgReadFromSlave.calibState = (Claw_Calibration)buff[0];
+    _msgReadFromSlave.zHeight =     int32_t(buff[1]<<24) | int32_t(buff[2]<<16) | int32_t(buff[3]<<8) | int32_t(buff[4]);
+    _msgReadFromSlave.zHeightMax =  int32_t(buff[5]<<24) | int32_t(buff[6]<<16) | int32_t(buff[7]<<8) | int32_t(buff[8]);
     timer.doDelay();
 }
 
@@ -203,14 +207,11 @@ bool MoveMaster::isZatBottom()
 // MoveSlave class function implementations ------------------------------------------------------------------------------------
 
 /// @brief First outside the setup function: MoveSlave* MoveSlave::instance = nullptr; then init it normally then in the setup first give the instance: nameyougave.instance = &nameyougave then use these: Wire.onReceive(MoveSlave::readMessageFromMaster); and Wire.onRequest(&(msgSlave.instance->replyToMaster));
-/// @param zStepRate the rate of the Z axis stepper motor
-MoveSlave::MoveSlave(int32_t zStepRate) : timer(2)
+MoveSlave::MoveSlave(int32_t* pointerToGlobalZPos) : timer(2)
 {   
-    _zStepRate = zStepRate;
     setDefaultControllState();
     calibDefault();
-    _zCurrentPosition = -1;
-    _zHeightBottom = 5;
+    _currZpos = pointerToGlobalZPos;
 
     Wire.begin(I2C_MOTOR_CTRL_ADDRESS);
 }
@@ -284,48 +285,33 @@ bool MoveSlave::isMessageFromMasterContainsControllState(Claw_Controll_State sea
 
 int32_t MoveSlave::getCurrentZPosition()
 {
-    return _zCurrentPosition;
-}
-
-int32_t MoveSlave::getMaxZPosition()
-{
-    return _zHeightBottom;
+    return *_currZpos;
 }
 
 /// @brief should be set when incoming msg is set to top calib done for first time
 void MoveSlave::setZTopPosition()
 {
-    _zCurrentPosition = 0;
+    _zTopPosition = getCurrentZPosition();
 }
 
 /// @brief should be set when incoming msg is set to top calib down for first time
 void MoveSlave::setZBottomPosition()
 {
-    _zHeightBottom = _zCurrentPosition;
-}
-
-void MoveSlave::incrementZPositon()
-{
-    _zCurrentPosition += _zStepRate;
-}
-
-void MoveSlave::decrementZPositon()
-{
-    _zCurrentPosition -= _zStepRate;
-}
-
-/// @brief Should be used like: Wire.onRequest(replyToMaster)
-void MoveSlave::replyToMaster()
-{
-    instance->_msgToSend.calibState = instance->_msgFromMaster.calibState; //this is the lastly read message from the Master
-    instance->_msgToSend.zHeight    = instance->_zCurrentPosition;
-    instance->_msgToSend.zHeightMax = instance->_zHeightBottom;
-
-    Wire.write((byte*)&(instance->_msgToSend), sizeof(MessageFromSlave));
+    _zBottomPosition = getCurrentZPosition();
 }
 
 void MoveSlave::readMsg(int byteCount)
 {
     _msgFromMaster.calibState = (Claw_Calibration)Wire.read();
     _msgFromMaster.controlState = (Claw_Controll_State)Wire.read();
+}
+
+int32_t MoveSlave::getZPosBottom()
+{
+    return _zBottomPosition;
+}
+
+int32_t MoveSlave::getZPosTop()
+{
+    return _zTopPosition;
 }

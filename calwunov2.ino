@@ -8,8 +8,10 @@
 
 #include "motors.h"
 
+#define TIME_CLAW_CLOSE_TIME_MS 1000    //for now
+
 MoveSlave* MoveSlave::instance = nullptr;
-MoveSlave msgSlave = MoveSlave(Z_DIRECTION_STEP_COUNT);
+MoveSlave msgSlave = MoveSlave(&globalZposition);
 
 enum class LastMoveDirection_X : uint8_t
 {
@@ -26,6 +28,8 @@ enum class LastMoveDirection_Y : uint8_t
 bool hwLimiter[2];
 LastMoveDirection_X lastDirectionX;
 LastMoveDirection_Y lastDirectionY;
+
+MillisTimer timerClawClose(TIME_CLAW_CLOSE_TIME_MS);
 
 void setup() 
 {
@@ -56,13 +60,6 @@ void setup()
   
   msgSlave.instance = &msgSlave;
   Wire.onReceive(MoveSlave::readMessageFromMaster);
-  Wire.onRequest(&(msgSlave.instance->replyToMaster));
-
-  //Debug:
-  #ifdef DEBUG
-  Serial.begin(115200);
-  Serial.println("SETUP RAN.");
-  #endif // DEBUG
 }
 
 
@@ -98,7 +95,7 @@ void loop()
   //Z SW LIMITERS only used when calibrated
   if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_FINISHED))
   {
-    if(msgSlave.getCurrentZPosition() <= 0)
+    if(msgSlave.getCurrentZPosition() <= msgSlave.getZPosTop())       //Z pos gets bigger towards bottom
     {
       limiterStates[4] = true;
     }
@@ -107,7 +104,7 @@ void loop()
       limiterStates[4] = false;
     }
 
-    if(msgSlave.getCurrentZPosition() >= msgSlave.getMaxZPosition())
+    if(msgSlave.getCurrentZPosition() >= msgSlave.getZPosBottom())    //Z pos gets bigger towards bottom
     {
       limiterStates[5] = true;
     }
@@ -117,45 +114,7 @@ void loop()
     }
   }
 
-  /*
-  //DEBUG
-  #ifdef DEBUG
-  for(int i = 0; i<6; i++)
-  {
-   Serial.print(limiterStates[i], DEC);
-   Serial.print("\t");
-  }
-  Serial.println("^^^^^^^^^^^^^^^^^^^^^****");
-  #endif // DEBUG
-  */
-
-  //DEBUG end
-
-  //Power saving
-  /*
-  if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_IDLE))
-  {
-    digitalWrite(ENABLER, HIGH);
-    #ifdef DEBUG
-      Serial.println("STEPPERS DISABLED");
-    #endif // DEBUG
-  }
-  else if (msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_ERROR))
-  {
-    digitalWrite(ENABLER, HIGH);
-    #ifdef DEBUG
-      Serial.println("STEPPERS DISABLED");
-    #endif // DEBUG
-  }
-  else
-  {
-    digitalWrite(ENABLER, LOW); //activates steppers
-    #ifdef DEBUG
-      Serial.println("STEPPERS ENABLED *****************************************");
-    #endif // DEBUG
-  }
-  */
-
+  
   //Then we see if we are in calibration mode 
   if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_INIT))
   {
@@ -165,14 +124,12 @@ void loop()
       //UPWards
       if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_UP))
       {
-        msgSlave.decrementZPositon();
         moveClawUp(Z_DIRECTION_STEP_COUNT);
       }
 
       //DOWNWards
       if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_DOWN))
       {
-        msgSlave.incrementZPositon();
         moveClawDown(Z_DIRECTION_STEP_COUNT);
       }
 
@@ -191,7 +148,12 @@ void loop()
       {
         if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON))
         {
-          msgSlave.setZBottomPosition();
+          msgSlave.setZBottomPosition();  //set the bottom position
+          //go to the top after that
+          while(msgSlave.getCurrentZPosition() > msgSlave.getZPosTop()) //we do this until the top is reached 
+          {
+            moveClawUp(Z_DIRECTION_STEP_COUNT);
+          }
         }
         //"saying it is done" should be on master side
       }
@@ -237,17 +199,16 @@ void loop()
       //CLAW ACTION HERE
       if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_DOWN_DONE) && msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_TOP_DONE))
       {
-        while(msgSlave.getCurrentZPosition() < msgSlave.getMaxZPosition()) //we do this until we have reached the bottom position
+        while(msgSlave.getCurrentZPosition() < msgSlave.getZPosBottom()) //we do this until we have reached the bottom position
         {
-          msgSlave.incrementZPositon();
           moveClawDown(Z_DIRECTION_STEP_COUNT);
         }
 
         //we should wait here until claw is closed 
+        timerClawClose.doDelay();
 
-        while(msgSlave.getCurrentZPosition() > 0) //we do this until the top is reached 
+        while(msgSlave.getCurrentZPosition() > msgSlave.getZPosTop()) //we do this until the top is reached 
         {
-          msgSlave.decrementZPositon();
           moveClawUp(Z_DIRECTION_STEP_COUNT);
         }
 
