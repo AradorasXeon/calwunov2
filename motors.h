@@ -12,11 +12,14 @@
 #define STEP_DIR_Y 6
 #define STEP_DIR_Z 7
 
-#define ENABLER 8
+#define ENABLER_X 8   //PULL THIS LOW TO ENABLE CURRENT - on shield this enables all
+#define ENABLER_Y 11  //PULL THIS LOW TO ENABLE CURRENT
+#define ENABLER_Z 12  //PULL THIS LOW TO ENABLE CURRENT
 
-#define LIMIT_X 9
-#define LIMIT_Y 10
-#define LIMIT_Z 11
+
+#define LIMIT_X 9   //original from shield, also soldered in
+#define LIMIT_Y 10  //original from shield, also soldered in
+//#define LIMIT_Z 11 - NOT USED ANYWAY
 
 #define X_DIRECTION_STEP_COUNT 30
 #define Y_DIRECTION_STEP_COUNT 40
