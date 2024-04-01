@@ -41,6 +41,7 @@ struct MessageFromSlave
     Claw_Calibration calibState;
     int32_t zHeight;
     int32_t zHeightMax;
+    int32_t zHeightMin;
 };
 class MoveMaster
 {
@@ -106,6 +107,8 @@ class MoveSlave
 
     void setZTopPosition();
     void setZBottomPosition();
+
+    static void replyToMaster();
 
     private:
     void readMsg(int byteCount);

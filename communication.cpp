@@ -1,4 +1,6 @@
 #include "communication.hpp"
+#define DEBUG
+
 
 // Claw_Controll_State OPERATORS ------------------------------------------------------------------------------------
 
@@ -41,8 +43,9 @@ MoveMaster::MoveMaster() : timer(2)
     setDefaultControllState();
     calibDefault();
     _msgReadFromSlave.calibState = Claw_Calibration::CLAW_CALIB_IDLE_STATE;
-    _msgReadFromSlave.zHeight = -2500;
-    _msgReadFromSlave.zHeightMax = -1;
+    _msgReadFromSlave.zHeight = 0;
+    _msgReadFromSlave.zHeightMax = -99000;  //this should be a big positive number
+    _msgReadFromSlave.zHeightMin = 99000;   //this should be a small or negative number
 
     Wire.begin();
 }
@@ -144,12 +147,18 @@ void MoveMaster::sendMessageToSlave()
 /// @brief reads in the status of the slave, e.g.: z postion and the calib state of the slave
 void MoveMaster::readMessageFromSlave()
 {
-    byte buff[9];
     Wire.requestFrom(I2C_MOTOR_CTRL_ADDRESS, sizeof(MessageFromSlave), true);
-    Wire.readBytes(buff, 9);
-    _msgReadFromSlave.calibState = (Claw_Calibration)buff[0];
-    _msgReadFromSlave.zHeight =     int32_t(buff[1]<<24) | int32_t(buff[2]<<16) | int32_t(buff[3]<<8) | int32_t(buff[4]);
-    _msgReadFromSlave.zHeightMax =  int32_t(buff[5]<<24) | int32_t(buff[6]<<16) | int32_t(buff[7]<<8) | int32_t(buff[8]);
+    Wire.readBytes((uint8_t*)&_msgReadFromSlave, sizeof(MessageFromSlave));
+    #ifdef DEBUG
+        Serial.print("calibState: ");
+        Serial.println((uint8_t)_msgReadFromSlave.calibState, BIN);
+        Serial.print("zHeight: ");
+        Serial.println(_msgReadFromSlave.zHeight, DEC);
+        Serial.print("zHeightMax: ");
+        Serial.println(_msgReadFromSlave.zHeightMax, DEC);
+        Serial.print("zHeightMin: ");
+        Serial.println(_msgReadFromSlave.zHeightMin, DEC);
+    #endif // DEBUG
     timer.doDelay();
 }
 
@@ -188,7 +197,7 @@ bool MoveMaster::wasButtonPressed()
 /// @return true if according to the lastly read message z is at the top
 bool MoveMaster::isZatTop()
 {
-    if(_msgReadFromSlave.zHeight <= 0) //safer with <=
+    if(_msgReadFromSlave.zHeight <= _msgReadFromSlave.zHeightMin) //safer with <=
         return true;
     else
         return false;
@@ -314,4 +323,25 @@ int32_t MoveSlave::getZPosBottom()
 int32_t MoveSlave::getZPosTop()
 {
     return _zTopPosition;
+}
+
+void MoveSlave::replyToMaster()
+{
+    instance->_msgToSend.calibState = instance->_msgFromMaster.calibState; //this is the lastly read message from the Master
+    instance->_msgToSend.zHeight    = *(instance->_currZpos);
+    instance->_msgToSend.zHeightMax = instance->_zBottomPosition;
+    instance->_msgToSend.zHeightMin = instance->_zTopPosition;
+
+    #ifdef DEBUG
+        Serial.print("calibState: ");
+        Serial.println((uint8_t)instance->_msgToSend.calibState, BIN);
+        Serial.print("zHeight: ");
+        Serial.println(instance->_msgToSend.zHeight, DEC);
+        Serial.print("zHeightMax: ");
+        Serial.println(instance->_msgToSend.zHeightMax, DEC);
+        Serial.print("zHeightMin: ");
+        Serial.println(instance->_msgToSend.zHeightMin, DEC);
+    #endif // DEBUG
+
+    Wire.write((byte*)&(instance->_msgToSend), sizeof(MessageFromSlave));
 }

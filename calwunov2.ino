@@ -22,18 +22,20 @@ MoveSlave msgSlave = MoveSlave(&globalZposition);
 enum class LastMoveDirection_X : uint8_t
 {
     LAST_MOVE_X_LEFT = 0,
+    LAST_MOVE_X_STARTUP = 128,
     LAST_MOVE_X_RIGHT = 255
 };
 
 enum class LastMoveDirection_Y : uint8_t
 {
     LAST_MOVE_Y_UP = 0,
+    LAST_MOVE_Y_STARTUP = 128,
     LAST_MOVE_Y_DOWN = 255
 };
 
 bool hwLimiter[2];
-LastMoveDirection_X lastDirectionX;
-LastMoveDirection_Y lastDirectionY;
+LastMoveDirection_X lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_STARTUP;
+LastMoveDirection_Y lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_STARTUP;
 
 MillisTimer timerClawClose(TIME_CLAW_CLOSE_TIME_MS);
 
@@ -70,8 +72,10 @@ void setup()
   
   msgSlave.instance = &msgSlave;
   Wire.onReceive(MoveSlave::readMessageFromMaster);
+  Wire.onRequest(&(msgSlave.instance->replyToMaster));
   #ifdef DEBUG
     Serial.begin(115200);
+    Serial.println("MTR CTRL SETUP RAN.");
   #endif // DEBUG
 }
 
@@ -159,6 +163,7 @@ void loop()
         if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON))
         {
           msgSlave.setZTopPosition();
+          msgSlave.setDefaultControllState(); //in case we got to the next loop to fast the SW might "think" the button was pressed when it was not
           DEBUG_PRINTLN("Z TOP set.");
         }
         //"saying it is done" should be on master side
@@ -170,12 +175,13 @@ void loop()
         if(msgSlave.isMessageFromMasterContainsControllState(Claw_Controll_State::CLAW_CONTROLL_STATE_BUTTON))
         {
           msgSlave.setZBottomPosition();  //set the bottom position
+          msgSlave.setDefaultControllState(); //in case we got to the next loop to fast the SW might "think" the button was pressed when it was not
           DEBUG_PRINTLN("Z BOTTOM set.");
           //go to the top after that
           while(msgSlave.getCurrentZPosition() > msgSlave.getZPosTop()) //we do this until the top is reached 
           {
             moveClawUp(Z_DIRECTION_STEP_COUNT);
-            DEBUG_PRINTLN("CALIB: pulling up claw.");
+            //DEBUG_PRINTLN("CALIB: pulling up claw.");
           }
         }
         //"saying it is done" should be on master side
@@ -237,7 +243,7 @@ void loop()
         while(msgSlave.getCurrentZPosition() < msgSlave.getZPosBottom()) //we do this until we have reached the bottom position
         {
           moveClawDown(Z_DIRECTION_STEP_COUNT);
-          DEBUG_PRINTLN("Play: going down for prize.");
+          //DEBUG_PRINTLN("Play: going down for prize.");
         }
 
         //we should wait here until claw is closed 
@@ -246,7 +252,7 @@ void loop()
         while(msgSlave.getCurrentZPosition() > msgSlave.getZPosTop()) //we do this until the top is reached 
         {
           moveClawUp(Z_DIRECTION_STEP_COUNT);
-          DEBUG_PRINTLN("Play: pulling up claw.");
+          //DEBUG_PRINTLN("Play: pulling up claw.");
         }
 
         //then goto home position 
@@ -260,7 +266,7 @@ void loop()
           lastDirectionX = LastMoveDirection_X::LAST_MOVE_X_LEFT;
           moveLeft(X_DIRECTION_STEP_COUNT);
           limiterStateCheckerUpdater();
-          DEBUG_PRINTLN("Play: going left HOME.");
+          //DEBUG_PRINTLN("Play: going left HOME.");
         }
 
         //go to most bottom position (Y)
@@ -269,7 +275,7 @@ void loop()
           lastDirectionY = LastMoveDirection_Y::LAST_MOVE_Y_DOWN;
           moveDown(Y_DIRECTION_STEP_COUNT);
           limiterStateCheckerUpdater();
-          DEBUG_PRINTLN("Play: going right HOME.");
+          //DEBUG_PRINTLN("Play: going down HOME.");
         }
 
         //maybe put down claw?
