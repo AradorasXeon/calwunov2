@@ -14,7 +14,7 @@
   #define DEBUG_PRINTLN(msg)
 #endif // DEBUG
 
-#define TIME_CLAW_CLOSE_TIME_MS 1000    //for now
+#define TIME_CLAW_CLOSE_TIME_MS 500
 
 MoveSlave* MoveSlave::instance = nullptr;
 MoveSlave msgSlave = MoveSlave(&globalZposition);
@@ -77,6 +77,10 @@ void setup()
     Serial.begin(115200);
     Serial.println("MTR CTRL SETUP RAN.");
   #endif // DEBUG
+
+  digitalWrite(ENABLER_Z, LOW);
+  moveClawDown(2*Z_DIRECTION_STEP_COUNT); //if this happen I will see that we have an unexpected restart
+  digitalWrite(ENABLER_Z, HIGH);
 }
 
 void limiterStateCheckerUpdater()
@@ -128,6 +132,18 @@ void limiterStateCheckerUpdater()
     {
       limiterStates[5] = false;
     }
+  }
+
+  //see if at home
+  if(limiterStates[0] && limiterStates[3]) //left and down
+  {
+    msgSlave.setClawHomePosition();
+    //DEBUG_PRINTLN("Claw set to HOME.");
+  }
+  else
+  {
+    msgSlave.unsetClawFromHome();
+    //DEBUG_PRINTLN("Claw UNSET from HOME.");
   }
 }
 
@@ -194,6 +210,7 @@ void loop()
     digitalWrite(ENABLER_Z, HIGH);
 
   }
+  // ***************** CALIB PART END *****************************************************
 
   if(msgSlave.isMessageFromMasterContainsCalibState(Claw_Calibration::CLAW_CALIB_FINISHED))
   {

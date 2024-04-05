@@ -213,6 +213,11 @@ bool MoveMaster::isZatBottom()
         return false;
 }
 
+bool MoveMaster::isClawAtHome()
+{
+    return _msgReadFromSlave.isHome;
+}
+
 // MoveSlave class function implementations ------------------------------------------------------------------------------------
 
 /// @brief First outside the setup function: MoveSlave* MoveSlave::instance = nullptr; then init it normally then in the setup first give the instance: nameyougave.instance = &nameyougave then use these: Wire.onReceive(MoveSlave::readMessageFromMaster); and Wire.onRequest(&(msgSlave.instance->replyToMaster));
@@ -309,6 +314,18 @@ void MoveSlave::setZBottomPosition()
     _zBottomPosition = getCurrentZPosition();
 }
 
+/// @brief says we are at home
+void MoveSlave::setClawHomePosition()
+{
+    _isClawAtHome = true;
+}
+
+/// @brief says we are not at home
+void MoveSlave::unsetClawFromHome()
+{
+    _isClawAtHome = false;
+}
+
 void MoveSlave::readMsg(int byteCount)
 {
     _msgFromMaster.calibState = (Claw_Calibration)Wire.read();
@@ -331,6 +348,7 @@ void MoveSlave::replyToMaster()
     instance->_msgToSend.zHeight    = *(instance->_currZpos);
     instance->_msgToSend.zHeightMax = instance->_zBottomPosition;
     instance->_msgToSend.zHeightMin = instance->_zTopPosition;
+    instance->_msgToSend.isHome     = instance->_isClawAtHome;
 
     #ifdef DEBUG
         Serial.print("calibState: ");

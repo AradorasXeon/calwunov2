@@ -42,6 +42,7 @@ struct MessageFromSlave
     int32_t zHeight;
     int32_t zHeightMax;
     int32_t zHeightMin;
+    bool isHome;
 };
 class MoveMaster
 {
@@ -73,6 +74,7 @@ class MoveMaster
     bool wasButtonPressed();
     bool isZatTop();
     bool isZatBottom();
+    bool isClawAtHome();
 
     private:
     MessageFromMaster _msgToSend;
@@ -107,6 +109,8 @@ class MoveSlave
 
     void setZTopPosition();
     void setZBottomPosition();
+    void setClawHomePosition();
+    void unsetClawFromHome();
 
     static void replyToMaster();
 
@@ -118,6 +122,7 @@ class MoveSlave
     int32_t* _currZpos;
     int32_t _zTopPosition;
     int32_t _zBottomPosition;
+    bool _isClawAtHome;
 
     MillisTimer timer;
 
